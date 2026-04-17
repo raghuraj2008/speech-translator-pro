@@ -9,8 +9,12 @@ class SpeechTranslatorApp {
       pitch: 1,
       continuous: false,
       autoTranslate: true,
-      apiEndpoint: "",
-      apiKey: ""
+      translatorKey: "",
+      translatorEndpoint: "",
+      translatorLocation: "",
+      speechKey: "",
+      speechEndpoint: "",
+      speechRegion: ""
     };
 
     this.el = {};
@@ -32,8 +36,9 @@ class SpeechTranslatorApp {
       "startBtn","stopBtn","clearBtn","copyBtn","speakBtn","saveSessionBtn",
       "recognizedText","translatedText","statusText","langStatus","sessionTime",
       "volumeMeter","voiceRate","voicePitch","rateValue","pitchValue",
-      "continuousMode","autoTranslate","apiEndpoint","apiKey","showKey",
-      "testApiBtn","saveSettingsBtn"
+      "continuousMode","autoTranslate","translatorKey","translatorEndpoint",
+      "translatorLocation","speechKey","speechEndpoint","speechRegion",
+      "showKeys","testApiBtn","saveSettingsBtn"
     ];
     ids.forEach(id => this.el[id] = document.getElementById(id));
   }
@@ -74,8 +79,10 @@ class SpeechTranslatorApp {
       this.saveSettings();
     });
 
-    this.el.showKey.addEventListener("change", () => {
-      this.el.apiKey.type = this.el.showKey.checked ? "text" : "password";
+    this.el.showKeys.addEventListener("change", () => {
+      const type = this.el.showKeys.checked ? "text" : "password";
+      this.el.translatorKey.type = type;
+      this.el.speechKey.type = type;
     });
 
     this.el.testApiBtn.addEventListener("click", () => this.testConnection());
@@ -158,28 +165,31 @@ class SpeechTranslatorApp {
   }
 
   async translateText(text) {
-    const endpoint = this.settings.apiEndpoint.trim();
-    const apiKey = this.settings.apiKey.trim();
+    const endpoint = this.settings.translatorEndpoint.trim();
+    const key = this.settings.translatorKey.trim();
+    const location = this.settings.translatorLocation.trim();
 
-    if (!endpoint || !apiKey) {
-      this.el.translatedText.value = "Add API endpoint and key in Settings.";
-      this.el.langStatus.textContent = "Missing API config";
+    if (!endpoint || !key || !location) {
+      this.el.translatedText.value = "Add Translator key, endpoint, and location in Settings.";
+      this.el.langStatus.textContent = "Missing Translator config";
       return;
     }
 
     this.el.statusText.textContent = "Translating...";
     try {
-      const res = await fetch(endpoint, {
+      const source = this.el.detectLang.value === "auto" ? "en" : this.el.detectLang.value.split("-")[0];
+      const target = this.el.targetLang.value;
+
+      const url = `${endpoint.replace(/\/$/, "")}/translate?api-version=3.0&from=${encodeURIComponent(source)}&to=${encodeURIComponent(target)}`;
+
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "Ocp-Apim-Subscription-Key": key,
+          "Ocp-Apim-Subscription-Region": location
         },
-        body: JSON.stringify({
-          text,
-          source: this.el.detectLang.value,
-          target: this.el.targetLang.value
-        })
+        body: JSON.stringify([{ Text: text }])
       });
 
       if (!res.ok) {
@@ -187,15 +197,7 @@ class SpeechTranslatorApp {
       }
 
       const data = await res.json();
-
-      const translated =
-        data.translatedText ||
-        data.translation ||
-        data.result ||
-        data.data?.translatedText ||
-        data.data?.translations?.[0]?.translatedText ||
-        "";
-
+      const translated = data?.[0]?.translations?.[0]?.text || "";
       this.el.translatedText.value = translated || "No translation returned.";
       this.el.langStatus.textContent = "Translated";
       this.el.statusText.textContent = "Done";
@@ -207,7 +209,7 @@ class SpeechTranslatorApp {
 
   speakTranslation() {
     const text = this.el.translatedText.value.trim();
-    if (!text || text.startsWith("Translation failed") || text === "Add API endpoint and key in Settings.") return;
+    if (!text || text.startsWith("Translation failed") || text === "Add Translator key, endpoint, and location in Settings.") return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -257,8 +259,12 @@ class SpeechTranslatorApp {
     this.settings.pitch = parseFloat(localStorage.getItem("pitch") || "1");
     this.settings.continuous = localStorage.getItem("continuous") === "true";
     this.settings.autoTranslate = localStorage.getItem("autoTranslate") !== "false";
-    this.settings.apiEndpoint = localStorage.getItem("apiEndpoint") || "";
-    this.settings.apiKey = localStorage.getItem("apiKey") || "";
+    this.settings.translatorKey = localStorage.getItem("translatorKey") || "";
+    this.settings.translatorEndpoint = localStorage.getItem("translatorEndpoint") || "";
+    this.settings.translatorLocation = localStorage.getItem("translatorLocation") || "";
+    this.settings.speechKey = localStorage.getItem("speechKey") || "";
+    this.settings.speechEndpoint = localStorage.getItem("speechEndpoint") || "";
+    this.settings.speechRegion = localStorage.getItem("speechRegion") || "";
 
     this.el.voiceRate.value = this.settings.rate;
     this.el.voicePitch.value = this.settings.pitch;
@@ -266,22 +272,37 @@ class SpeechTranslatorApp {
     this.el.pitchValue.textContent = this.settings.pitch.toFixed(1);
     this.el.continuousMode.checked = this.settings.continuous;
     this.el.autoTranslate.checked = this.settings.autoTranslate;
-    this.el.apiEndpoint.value = this.settings.apiEndpoint;
-    this.el.apiKey.value = this.settings.apiKey;
-    this.el.showKey.checked = false;
-    this.el.apiKey.type = "password";
+
+    this.el.translatorKey.value = this.settings.translatorKey;
+    this.el.translatorEndpoint.value = this.settings.translatorEndpoint;
+    this.el.translatorLocation.value = this.settings.translatorLocation;
+    this.el.speechKey.value = this.settings.speechKey;
+    this.el.speechEndpoint.value = this.settings.speechEndpoint;
+    this.el.speechRegion.value = this.settings.speechRegion;
+
+    this.el.showKeys.checked = false;
+    this.el.translatorKey.type = "password";
+    this.el.speechKey.type = "password";
   }
 
   saveSettings(showMessage = false) {
-    this.settings.apiEndpoint = this.el.apiEndpoint.value.trim();
-    this.settings.apiKey = this.el.apiKey.value.trim();
+    this.settings.translatorKey = this.el.translatorKey.value.trim();
+    this.settings.translatorEndpoint = this.el.translatorEndpoint.value.trim();
+    this.settings.translatorLocation = this.el.translatorLocation.value.trim();
+    this.settings.speechKey = this.el.speechKey.value.trim();
+    this.settings.speechEndpoint = this.el.speechEndpoint.value.trim();
+    this.settings.speechRegion = this.el.speechRegion.value.trim();
 
     localStorage.setItem("rate", String(this.settings.rate));
     localStorage.setItem("pitch", String(this.settings.pitch));
     localStorage.setItem("continuous", String(this.settings.continuous));
     localStorage.setItem("autoTranslate", String(this.settings.autoTranslate));
-    localStorage.setItem("apiEndpoint", this.settings.apiEndpoint);
-    localStorage.setItem("apiKey", this.settings.apiKey);
+    localStorage.setItem("translatorKey", this.settings.translatorKey);
+    localStorage.setItem("translatorEndpoint", this.settings.translatorEndpoint);
+    localStorage.setItem("translatorLocation", this.settings.translatorLocation);
+    localStorage.setItem("speechKey", this.settings.speechKey);
+    localStorage.setItem("speechEndpoint", this.settings.speechEndpoint);
+    localStorage.setItem("speechRegion", this.settings.speechRegion);
 
     if (showMessage) {
       this.el.statusText.textContent = "Settings saved";
@@ -290,26 +311,25 @@ class SpeechTranslatorApp {
   }
 
   async testConnection() {
-    const endpoint = this.el.apiEndpoint.value.trim();
-    const apiKey = this.el.apiKey.value.trim();
+    const endpoint = this.el.translatorEndpoint.value.trim();
+    const key = this.el.translatorKey.value.trim();
+    const location = this.el.translatorLocation.value.trim();
 
-    if (!endpoint || !apiKey) {
-      this.el.statusText.textContent = "Please enter endpoint and key first.";
+    if (!endpoint || !key || !location) {
+      this.el.statusText.textContent = "Enter translator endpoint, key, and location.";
       return;
     }
 
     try {
-      const res = await fetch(endpoint, {
+      const url = `${endpoint.replace(/\/$/, "")}/translate?api-version=3.0&to=hi`;
+      const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`
+          "Ocp-Apim-Subscription-Key": key,
+          "Ocp-Apim-Subscription-Region": location
         },
-        body: JSON.stringify({
-          text: "Hello",
-          source: "en",
-          target: "hi"
-        })
+        body: JSON.stringify([{ Text: "Hello" }])
       });
 
       if (res.ok) {

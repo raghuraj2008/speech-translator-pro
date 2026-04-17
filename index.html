@@ -152,21 +152,45 @@
 
         <hr class="divider">
 
-        <h4>Translation API</h4>
+        <h4>Translator Service</h4>
 
         <div class="setting-group">
-          <label for="apiEndpoint">API Endpoint</label>
-          <input id="apiEndpoint" type="text" placeholder="https://your-api.com/translate">
+          <label for="translatorKey">Translator Key</label>
+          <input id="translatorKey" type="password" placeholder="Enter Translator key">
         </div>
 
         <div class="setting-group">
-          <label for="apiKey">API Key</label>
-          <input id="apiKey" type="password" placeholder="Enter your API key">
+          <label for="translatorEndpoint">Translator Endpoint</label>
+          <input id="translatorEndpoint" type="text" placeholder="https://api.cognitive.microsofttranslator.com">
+        </div>
+
+        <div class="setting-group">
+          <label for="translatorLocation">Translator Location</label>
+          <input id="translatorLocation" type="text" placeholder="eastus">
+        </div>
+
+        <hr class="divider">
+
+        <h4>Speech Service</h4>
+
+        <div class="setting-group">
+          <label for="speechKey">Speech Key</label>
+          <input id="speechKey" type="password" placeholder="Enter Speech key">
+        </div>
+
+        <div class="setting-group">
+          <label for="speechEndpoint">Speech Endpoint</label>
+          <input id="speechEndpoint" type="text" placeholder="https://your-speech-resource.cognitiveservices.azure.com">
+        </div>
+
+        <div class="setting-group">
+          <label for="speechRegion">Speech Region</label>
+          <input id="speechRegion" type="text" placeholder="eastus">
         </div>
 
         <div class="setting-group inline">
-          <label for="showKey">Show Key</label>
-          <input id="showKey" type="checkbox">
+          <label for="showKeys">Show Keys</label>
+          <input id="showKeys" type="checkbox">
         </div>
 
         <div class="setting-actions">
