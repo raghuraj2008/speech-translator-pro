@@ -1,287 +1,335 @@
-class SpeechTranslator {
-    constructor() {
-        this.recognition = null;
-        this.synthesis = window.speechSynthesis;
-        this.isListening = false;
-        this.sessionStart = Date.now();
-        this.translations = [];
-        
-        this.initializeElements();
-        this.bindEvents();
-        this.checkBrowserSupport();
+class SpeechTranslatorApp {
+  constructor() {
+    this.recognition = null;
+    this.speechSynthesis = window.speechSynthesis;
+    this.isListening = false;
+    this.sessionStart = Date.now();
+    this.settings = {
+      rate: 1,
+      pitch: 1,
+      continuous: false,
+      autoTranslate: true,
+      apiEndpoint: "",
+      apiKey: ""
+    };
+
+    this.el = {};
+    this.init();
+  }
+
+  init() {
+    this.cacheElements();
+    this.bindEvents();
+    this.loadSettings();
+    this.setupSpeechRecognition();
+    this.updateSessionTimer();
+    setInterval(() => this.updateSessionTimer(), 1000);
+  }
+
+  cacheElements() {
+    const ids = [
+      "openSettingsBtn","settingsModal","closeSettingsBtn","detectLang","targetLang",
+      "startBtn","stopBtn","clearBtn","copyBtn","speakBtn","saveSessionBtn",
+      "recognizedText","translatedText","statusText","langStatus","sessionTime",
+      "volumeMeter","voiceRate","voicePitch","rateValue","pitchValue",
+      "continuousMode","autoTranslate","apiEndpoint","apiKey","showKey",
+      "testApiBtn","saveSettingsBtn"
+    ];
+    ids.forEach(id => this.el[id] = document.getElementById(id));
+  }
+
+  bindEvents() {
+    this.el.openSettingsBtn.addEventListener("click", () => this.openSettings());
+    this.el.closeSettingsBtn.addEventListener("click", () => this.closeSettings());
+    this.el.settingsModal.addEventListener("click", (e) => {
+      if (e.target === this.el.settingsModal) this.closeSettings();
+    });
+
+    this.el.startBtn.addEventListener("click", () => this.startListening());
+    this.el.stopBtn.addEventListener("click", () => this.stopListening());
+    this.el.clearBtn.addEventListener("click", () => this.clearAll());
+    this.el.copyBtn.addEventListener("click", () => this.copyText());
+    this.el.speakBtn.addEventListener("click", () => this.speakTranslation());
+    this.el.saveSessionBtn.addEventListener("click", () => this.saveSession());
+
+    this.el.voiceRate.addEventListener("input", () => {
+      this.settings.rate = parseFloat(this.el.voiceRate.value);
+      this.el.rateValue.textContent = this.settings.rate.toFixed(1);
+      this.saveSettings();
+    });
+
+    this.el.voicePitch.addEventListener("input", () => {
+      this.settings.pitch = parseFloat(this.el.voicePitch.value);
+      this.el.pitchValue.textContent = this.settings.pitch.toFixed(1);
+      this.saveSettings();
+    });
+
+    this.el.continuousMode.addEventListener("change", () => {
+      this.settings.continuous = this.el.continuousMode.checked;
+      this.saveSettings();
+    });
+
+    this.el.autoTranslate.addEventListener("change", () => {
+      this.settings.autoTranslate = this.el.autoTranslate.checked;
+      this.saveSettings();
+    });
+
+    this.el.showKey.addEventListener("change", () => {
+      this.el.apiKey.type = this.el.showKey.checked ? "text" : "password";
+    });
+
+    this.el.testApiBtn.addEventListener("click", () => this.testConnection());
+    this.el.saveSettingsBtn.addEventListener("click", () => this.saveSettings(true));
+
+    this.el.detectLang.addEventListener("change", () => {
+      this.el.langStatus.textContent = `Speech: ${this.el.detectLang.value}`;
+    });
+    this.el.targetLang.addEventListener("change", () => {
+      this.el.langStatus.textContent = `Target: ${this.el.targetLang.value}`;
+    });
+  }
+
+  setupSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.el.statusText.textContent = "Speech recognition is not supported in this browser.";
+      this.el.startBtn.disabled = true;
+      return;
     }
 
-    initializeElements() {
-        this.elements = {
-            startBtn: document.getElementById('startBtn'),
-            stopBtn: document.getElementById('stopBtn'),
-            recognizedText: document.getElementById('recognizedText'),
-            translatedText: document.getElementById('translatedText'),
-            detectLang: document.getElementById('detectLang'),
-            targetLang: document.getElementById('targetLang'),
-            copyBtn: document.getElementById('copyBtn'),
-            speakBtn: document.getElementById('speakBtn'),
-            clearBtn: document.getElementById('clearBtn'),
-            saveSession: document.getElementById('saveSession'),
-            volumeMeter: document.getElementById('volumeMeter'),
-            statusText: document.getElementById('statusText'),
-            sessionTime: document.getElementById('sessionTime'),
-            langStatus: document.getElementById('langStatus'),
-            settingsModal: document.getElementById('settingsModal'),
-            closeSettings: document.getElementById('closeSettings'),
-            voiceRate: document.getElementById('voiceRate'),
-            voicePitch: document.getElementById('voicePitch'),
-            rateValue: document.getElementById('rateValue'),
-            pitchValue: document.getElementById('pitchValue'),
-            continuousMode: document.getElementById('continuousMode'),
-            autoTranslate: document.getElementById('autoTranslate')
-        };
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = false;
+    this.recognition.interimResults = true;
+    this.recognition.lang = this.el.detectLang.value;
 
-        // Settings defaults
-        this.settings = {
-            rate: 1,
-            pitch: 1,
-            continuous: false,
-            autoTranslate: true
-        };
-    }
+    this.recognition.onstart = () => {
+      this.isListening = true;
+      this.el.statusText.textContent = "Listening...";
+      this.el.startBtn.classList.add("hidden");
+      this.el.stopBtn.classList.remove("hidden");
+    };
 
-    bindEvents() {
-        this.elements.startBtn.addEventListener('click', () => this.startListening());
-        this.elements.stopBtn.addEventListener('click', () => this.stopListening());
-        this.elements.copyBtn.addEventListener('click', () => this.copyText('recognizedText'));
-        this.elements.speakBtn.addEventListener('click', () => this.speakText());
-        this.elements.clearBtn.addEventListener('click', () => this.clearAll());
-        this.elements.saveSession.addEventListener('click', () => this.saveSession());
-        
-        this.elements.detectLang.addEventListener('change', () => this.updateStatus());
-        this.elements.targetLang.addEventListener('change', () => this.updateStatus());
-        
-        // Settings events
-        this.elements.voiceRate.addEventListener('input', (e) => {
-            this.settings.rate = parseFloat(e.target.value);
-            this.elements.rateValue.textContent = this.settings.rate.toFixed(1);
-        });
-        this.elements.voicePitch.addEventListener('input', (e) => {
-            this.settings.pitch = parseFloat(e.target.value);
-            this.elements.pitchValue.textContent = this.settings.pitch.toFixed(1);
-        });
-        this.elements.continuousMode.addEventListener('change', (e) => {
-            this.settings.continuous = e.target.checked;
-        });
-        this.elements.autoTranslate.addEventListener('change', (e) => {
-            this.settings.autoTranslate = e.target.checked;
-        });
-
-        // Modal
-        document.addEventListener('click', (e) => {
-            if (e.target === this.elements.settingsModal) {
-                this.closeSettings();
-            }
-        });
-        this.elements.closeSettings.addEventListener('click', () => this.closeSettings());
-        
-        // Update session time
-        setInterval(() => this.updateSessionTime(), 1000);
-    }
-
-    checkBrowserSupport() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            this.elements.statusText.textContent = 'Speech recognition not supported in this browser';
-            this.elements.startBtn.disabled = true;
-            return false;
+    this.recognition.onresult = async (event) => {
+      let finalText = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript + " ";
         }
-        this.recognition = new SpeechRecognition();
-        this.setupRecognition();
-        return true;
-    }
+      }
 
-    setupRecognition() {
-        this.recognition.continuous = false;
-        this.recognition.interimResults = true;
-        this.recognition.lang = this.elements.detectLang.value;
-        
-        this.recognition.onstart = () => {
-            this.isListening = true;
-            document.body.classList.add('listening');
-            this.elements.startBtn.style.display = 'none';
-            this.elements.stopBtn.style.display = 'inline-flex';
-            this.elements.statusText.textContent = 'Listening... Speak now!';
-            this.updateStatus('Listening');
-        };
-
-        this.recognition.onresult = (event) => {
-            let finalTranscript = '';
-            let interimTranscript = '';
-
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript;
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                } else {
-                    interimTranscript += transcript;
-                }
-            }
-
-            if (finalTranscript) {
-                this.elements.recognizedText.value += finalTranscript + ' ';
-                if (this.settings.autoTranslate) {
-                    this.translateText(finalTranscript);
-                }
-            }
-            this.elements.recognizedText.scrollTop = this.elements.recognizedText.scrollHeight;
-        };
-
-        this.recognition.onend = () => {
-            this.isListening = false;
-            document.body.classList.remove('listening');
-            this.elements.startBtn.style.display = 'inline-flex';
-            this.elements.stopBtn.style.display = 'none';
-            this.elements.statusText.textContent = 'Click microphone to start speaking';
-            
-            if (this.settings.continuous) {
-                setTimeout(() => this.startListening(), 500);
-            }
-        };
-
-        this.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            this.elements.statusText.textContent = `Error: ${event.error}`;
-            this.stopListening();
-        };
-    }
-
-    async translateText(text) {
-        try {
-            this.elements.statusText.textContent = 'Translating...';
-            const targetLang = this.elements.targetLang.value;
-            
-            // Simple language translation simulation (in real app, use Google Translate API)
-            const translations = {
-                'en-US': { 'hi-IN': text.replace(/hello/gi, 'नमस्ते').replace(/how are you/gi, 'आप कैसे हैं') },
-                'hi-IN': { 'en-US': text.replace(/नमस्ते/gi, 'Hello').replace(/आप कैसे हैं/gi, 'How are you') }
-            };
-            
-            // For demo, we'll just use target language voices
-            this.elements.translatedText.value = text;
-            this.elements.langStatus.textContent = `Translated to ${targetLang}`;
-            this.elements.statusText.textContent = 'Translation complete';
-            
-            this.translations.push({
-                original: text,
-                translated: text,
-                from: this.elements.detectLang.value,
-                to: targetLang,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error('Translation error:', error);
-            this.elements.statusText.textContent = 'Translation failed';
+      if (finalText.trim()) {
+        this.el.recognizedText.value += finalText;
+        this.el.recognizedText.scrollTop = this.el.recognizedText.scrollHeight;
+        if (this.settings.autoTranslate) {
+          await this.translateText(finalText.trim());
         }
+      }
+    };
+
+    this.recognition.onerror = (event) => {
+      this.el.statusText.textContent = `Error: ${event.error}`;
+      this.stopListening();
+    };
+
+    this.recognition.onend = () => {
+      this.isListening = false;
+      this.el.statusText.textContent = "Ready";
+      this.el.startBtn.classList.remove("hidden");
+      this.el.stopBtn.classList.add("hidden");
+      if (this.settings.continuous) {
+        setTimeout(() => this.startListening(), 400);
+      }
+    };
+  }
+
+  startListening() {
+    if (!this.recognition) return;
+    this.recognition.lang = this.el.detectLang.value;
+    try {
+      this.recognition.start();
+    } catch (e) {}
+  }
+
+  stopListening() {
+    if (!this.recognition) return;
+    try {
+      this.recognition.stop();
+    } catch (e) {}
+  }
+
+  async translateText(text) {
+    const endpoint = this.settings.apiEndpoint.trim();
+    const apiKey = this.settings.apiKey.trim();
+
+    if (!endpoint || !apiKey) {
+      this.el.translatedText.value = "Add API endpoint and key in Settings.";
+      this.el.langStatus.textContent = "Missing API config";
+      return;
     }
 
-    startListening() {
-        if (this.recognition) {
-            this.recognition.lang = this.elements.detectLang.value;
-            this.recognition.start();
-        }
+    this.el.statusText.textContent = "Translating...";
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          text,
+          source: this.el.detectLang.value,
+          target: this.el.targetLang.value
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      const translated =
+        data.translatedText ||
+        data.translation ||
+        data.result ||
+        data.data?.translatedText ||
+        data.data?.translations?.[0]?.translatedText ||
+        "";
+
+      this.el.translatedText.value = translated || "No translation returned.";
+      this.el.langStatus.textContent = "Translated";
+      this.el.statusText.textContent = "Done";
+    } catch (error) {
+      this.el.translatedText.value = `Translation failed: ${error.message}`;
+      this.el.statusText.textContent = "Translation failed";
+    }
+  }
+
+  speakTranslation() {
+    const text = this.el.translatedText.value.trim();
+    if (!text || text.startsWith("Translation failed") || text === "Add API endpoint and key in Settings.") return;
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = this.settings.rate;
+    utterance.pitch = this.settings.pitch;
+    utterance.lang = this.el.targetLang.value;
+    this.speechSynthesis.speak(utterance);
+  }
+
+  copyText() {
+    const text = this.el.translatedText.value || this.el.recognizedText.value;
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+  }
+
+  clearAll() {
+    this.el.recognizedText.value = "";
+    this.el.translatedText.value = "";
+    this.el.statusText.textContent = "Cleared";
+  }
+
+  saveSession() {
+    const payload = {
+      recognized: this.el.recognizedText.value,
+      translated: this.el.translatedText.value,
+      date: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `speech-session-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  openSettings() {
+    this.el.settingsModal.classList.remove("hidden");
+  }
+
+  closeSettings() {
+    this.el.settingsModal.classList.add("hidden");
+  }
+
+  loadSettings() {
+    this.settings.rate = parseFloat(localStorage.getItem("rate") || "1");
+    this.settings.pitch = parseFloat(localStorage.getItem("pitch") || "1");
+    this.settings.continuous = localStorage.getItem("continuous") === "true";
+    this.settings.autoTranslate = localStorage.getItem("autoTranslate") !== "false";
+    this.settings.apiEndpoint = localStorage.getItem("apiEndpoint") || "";
+    this.settings.apiKey = localStorage.getItem("apiKey") || "";
+
+    this.el.voiceRate.value = this.settings.rate;
+    this.el.voicePitch.value = this.settings.pitch;
+    this.el.rateValue.textContent = this.settings.rate.toFixed(1);
+    this.el.pitchValue.textContent = this.settings.pitch.toFixed(1);
+    this.el.continuousMode.checked = this.settings.continuous;
+    this.el.autoTranslate.checked = this.settings.autoTranslate;
+    this.el.apiEndpoint.value = this.settings.apiEndpoint;
+    this.el.apiKey.value = this.settings.apiKey;
+    this.el.showKey.checked = false;
+    this.el.apiKey.type = "password";
+  }
+
+  saveSettings(showMessage = false) {
+    this.settings.apiEndpoint = this.el.apiEndpoint.value.trim();
+    this.settings.apiKey = this.el.apiKey.value.trim();
+
+    localStorage.setItem("rate", String(this.settings.rate));
+    localStorage.setItem("pitch", String(this.settings.pitch));
+    localStorage.setItem("continuous", String(this.settings.continuous));
+    localStorage.setItem("autoTranslate", String(this.settings.autoTranslate));
+    localStorage.setItem("apiEndpoint", this.settings.apiEndpoint);
+    localStorage.setItem("apiKey", this.settings.apiKey);
+
+    if (showMessage) {
+      this.el.statusText.textContent = "Settings saved";
+      this.closeSettings();
+    }
+  }
+
+  async testConnection() {
+    const endpoint = this.el.apiEndpoint.value.trim();
+    const apiKey = this.el.apiKey.value.trim();
+
+    if (!endpoint || !apiKey) {
+      this.el.statusText.textContent = "Please enter endpoint and key first.";
+      return;
     }
 
-    stopListening() {
-        if (this.recognition && this.isListening) {
-            this.recognition.stop();
-        }
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          text: "Hello",
+          source: "en",
+          target: "hi"
+        })
+      });
+
+      if (res.ok) {
+        this.el.statusText.textContent = "Connection successful";
+      } else {
+        this.el.statusText.textContent = `Connection failed: ${res.status}`;
+      }
+    } catch (error) {
+      this.el.statusText.textContent = `Connection error: ${error.message}`;
     }
+  }
 
-    speakText() {
-        const text = this.elements.translatedText.value;
-        if (!text) return;
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = this.elements.targetLang.value;
-        utterance.rate = this.settings.rate;
-        utterance.pitch = this.settings.pitch;
-        utterance.volume = 1;
-
-        this.synthesis.speak(utterance);
-    }
-
-    copyText(areaId) {
-        const text = this.elements[areaId].value;
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = this.elements[`${areaId.replace('Text', 'Btn')}`];
-            const originalIcon = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            setTimeout(() => btn.innerHTML = originalIcon, 2000);
-        });
-    }
-
-    clearAll() {
-        this.elements.recognizedText.value = '';
-        this.elements.translatedText.value = '';
-        this.translations = [];
-    }
-
-    saveSession() {
-        const sessionData = {
-            timestamp: new Date().toISOString(),
-            duration: this.getSessionDuration(),
-            translations: this.translations
-        };
-        const dataStr = JSON.stringify(sessionData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `speech-session-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-    }
-
-    updateSessionTime() {
-        const elapsed = Math.floor((Date.now() - this.sessionStart) / 1000);
-        const minutes = Math.floor(elapsed / 60);
-        const seconds = elapsed % 60;
-        this.elements.sessionTime.textContent = 
-            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    getSessionDuration() {
-        const elapsed = Math.floor((Date.now() - this.sessionStart) / 1000);
-        return `${Math.floor(elapsed / 60)}m ${elapsed % 60}s`;
-    }
-
-    updateStatus(message = '') {
-        this.elements.langStatus.textContent = message || 
-            `From: ${this.elements.detectLang.value} → To: ${this.elements.targetLang.value}`;
-    }
-
-    openSettings() {
-        this.elements.settingsModal.style.display = 'flex';
-        this.elements.voiceRate.value = this.settings.rate;
-        this.elements.voicePitch.value = this.settings.pitch;
-        this.elements.continuousMode.checked = this.settings.continuous;
-        this.elements.autoTranslate.checked = this.settings.autoTranslate;
-        this.elements.rateValue.textContent = this.settings.rate.toFixed(1);
-        this.elements.pitchValue.textContent = this.settings.pitch.toFixed(1);
-    }
-
-    closeSettings() {
-        this.elements.settingsModal.style.display = 'none';
-    }
+  updateSessionTimer() {
+    const elapsed = Math.floor((Date.now() - this.sessionStart) / 1000);
+    const mm = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const ss = String(elapsed % 60).padStart(2, "0");
+    this.el.sessionTime.textContent = `${mm}:${ss}`;
+  }
 }
 
-// Settings button (add this to HTML or create dynamically)
-document.addEventListener('DOMContentLoaded', () => {
-    // Add settings button to features panel
-    const featuresPanel = document.querySelector('.features-panel');
-    const settingsBtn = document.createElement('button');
-    settingsBtn.className = 'icon-btn';
-    settingsBtn.innerHTML = '<i class="fas fa-cog"></i>';
-    settingsBtn.title = 'Settings';
-    settingsBtn.onclick = () => app.openSettings();
-    featuresPanel.appendChild(settingsBtn);
-    
-    // Initialize app
-    window.app = new SpeechTranslator();
+window.addEventListener("DOMContentLoaded", () => {
+  new SpeechTranslatorApp();
 });

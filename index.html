@@ -1,148 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Speech Translator</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speech Translator Pro</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-microphone"></i> Speech Translator Pro</h1>
-            <p>Real-time speech recognition, translation & synthesis</p>
-        </header>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <h1><i class="fa-solid fa-microphone-lines"></i> Speech Translator Pro</h1>
+        <p>Speech recognition, translation, and text-to-speech in one place</p>
+      </div>
+      <button id="openSettingsBtn" class="icon-button" title="Settings">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </header>
 
-        <div class="main-content">
-            <!-- Input Section -->
-            <div class="speech-section">
-                <div class="lang-selector">
-                    <div class="lang-group">
-                        <label>Detect Language:</label>
-                        <select id="detectLang">
-                            <option value="auto">Auto Detect</option>
-                            <option value="en-US">English (US)</option>
-                            <option value="hi-IN">Hindi (India)</option>
-                            <option value="es-ES">Spanish</option>
-                            <option value="fr-FR">French</option>
-                            <option value="de-DE">German</option>
-                            <option value="it-IT">Italian</option>
-                            <option value="pt-BR">Portuguese</option>
-                            <option value="ru-RU">Russian</option>
-                            <option value="zh-CN">Chinese</option>
-                        </select>
-                    </div>
-                    <div class="lang-group">
-                        <label>Translate To:</label>
-                        <select id="targetLang">
-                            <option value="en-US">English (US)</option>
-                            <option value="hi-IN">Hindi (India)</option>
-                            <option value="es-ES">Spanish</option>
-                            <option value="fr-FR">French</option>
-                            <option value="de-DE">German</option>
-                            <option value="it-IT">Italian</option>
-                            <option value="pt-BR">Portuguese</option>
-                            <option value="ru-RU">Russian</option>
-                            <option value="zh-CN">Chinese</option>
-                        </select>
-                    </div>
-                </div>
+    <main class="grid">
+      <section class="card hero">
+        <div class="row">
+          <div class="field">
+            <label for="detectLang">Speech Language</label>
+            <select id="detectLang">
+              <option value="auto">Auto Detect</option>
+              <option value="en-US">English (US)</option>
+              <option value="hi-IN">Hindi</option>
+              <option value="es-ES">Spanish</option>
+              <option value="fr-FR">French</option>
+              <option value="de-DE">German</option>
+              <option value="it-IT">Italian</option>
+              <option value="pt-BR">Portuguese</option>
+              <option value="ru-RU">Russian</option>
+              <option value="zh-CN">Chinese</option>
+              <option value="ja-JP">Japanese</option>
+              <option value="ko-KR">Korean</option>
+            </select>
+          </div>
 
-                <div class="input-area">
-                    <button id="startBtn" class="control-btn primary">
-                        <i class="fas fa-microphone"></i> Start Listening
-                    </button>
-                    <button id="stopBtn" class="control-btn secondary" style="display: none;">
-                        <i class="fas fa-stop"></i> Stop
-                    </button>
-                    <div class="volume-meter">
-                        <div class="meter" id="volumeMeter"></div>
-                    </div>
-                </div>
-
-                <div class="output-box">
-                    <div class="output-header">
-                        <span>Recognized Speech:</span>
-                        <button id="copyBtn" class="icon-btn" title="Copy">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <textarea id="recognizedText" placeholder="Start speaking... Your speech will appear here..." readonly></textarea>
-                </div>
-            </div>
-
-            <!-- Translation Section -->
-            <div class="translation-section">
-                <div class="output-header">
-                    <span>Translated Text:</span>
-                    <button id="speakBtn" class="icon-btn primary" title="Speak">
-                        <i class="fas fa-volume-up"></i>
-                    </button>
-                    <button id="clearBtn" class="icon-btn" title="Clear">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <textarea id="translatedText" placeholder="Translation will appear here..." readonly></textarea>
-            </div>
+          <div class="field">
+            <label for="targetLang">Translate To</label>
+            <select id="targetLang">
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="ru">Russian</option>
+              <option value="zh">Chinese</option>
+              <option value="ja">Japanese</option>
+              <option value="ko">Korean</option>
+            </select>
+          </div>
         </div>
 
-        <!-- Features Panel -->
-        <div class="features-panel">
-            <div class="feature-item">
-                <i class="fas fa-clock"></i>
-                <span id="sessionTime">00:00</span>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-history"></i>
-                <span>Live Translation</span>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-language"></i>
-                <span id="langStatus">Ready</span>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-save"></i>
-                <button id="saveSession" class="icon-btn small">Save</button>
-            </div>
+        <div class="actions">
+          <button id="startBtn" class="btn primary">
+            <i class="fa-solid fa-circle-play"></i> Start Listening
+          </button>
+          <button id="stopBtn" class="btn danger hidden">
+            <i class="fa-solid fa-circle-stop"></i> Stop
+          </button>
+          <button id="clearBtn" class="btn ghost">
+            <i class="fa-solid fa-trash"></i> Clear
+          </button>
+          <button id="copyBtn" class="btn ghost">
+            <i class="fa-solid fa-copy"></i> Copy
+          </button>
+          <button id="speakBtn" class="btn secondary">
+            <i class="fa-solid fa-volume-high"></i> Speak Translation
+          </button>
         </div>
 
-        <!-- Settings Modal -->
-        <div id="settingsModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Settings</h3>
-                    <button id="closeSettings" class="close-btn">&times;</button>
-                </div>
-                <div class="settings-grid">
-                    <div class="setting-item">
-                        <label>Voice Speed:</label>
-                        <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
-                        <span id="rateValue">1.0</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>Voice Pitch:</label>
-                        <input type="range" id="voicePitch" min="0" max="2" step="0.1" value="1">
-                        <span id="pitchValue">1.0</span>
-                    </div>
-                    <div class="setting-item">
-                        <label>Continuous Listening:</label>
-                        <input type="checkbox" id="continuousMode">
-                    </div>
-                    <div class="setting-item">
-                        <label>Auto Translate:</label>
-                        <input type="checkbox" id="autoTranslate" checked>
-                    </div>
-                </div>
-            </div>
+        <div class="meter-wrap">
+          <div class="meter-label">
+            <span>Status</span>
+            <span id="statusText">Ready</span>
+          </div>
+          <div class="meter-track">
+            <div id="volumeMeter" class="meter-fill"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="panel-head">
+          <h2>Recognized Speech</h2>
+          <span id="langStatus">Idle</span>
+        </div>
+        <textarea id="recognizedText" placeholder="Your speech will appear here..." readonly></textarea>
+      </section>
+
+      <section class="card">
+        <div class="panel-head">
+          <h2>Translated Text</h2>
+          <button id="saveSessionBtn" class="small-btn">
+            <i class="fa-solid fa-download"></i> Save Session
+          </button>
+        </div>
+        <textarea id="translatedText" placeholder="Translation will appear here..." readonly></textarea>
+      </section>
+
+      <section class="card stats">
+        <div class="stat">
+          <span class="stat-label">Session Time</span>
+          <span id="sessionTime" class="stat-value">00:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Auto Translate</span>
+          <span class="stat-value">On</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Speech Support</span>
+          <span class="stat-value">Web API</span>
+        </div>
+      </section>
+    </main>
+
+    <div id="settingsModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-head">
+          <h3>Settings</h3>
+          <button id="closeSettingsBtn" class="icon-button"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <span id="statusText">Click microphone to start speaking</span>
+        <div class="setting-group">
+          <label for="voiceRate">Voice Rate</label>
+          <input id="voiceRate" type="range" min="0.5" max="2" step="0.1" value="1">
+          <span id="rateValue">1.0</span>
         </div>
+
+        <div class="setting-group">
+          <label for="voicePitch">Voice Pitch</label>
+          <input id="voicePitch" type="range" min="0" max="2" step="0.1" value="1">
+          <span id="pitchValue">1.0</span>
+        </div>
+
+        <div class="setting-group inline">
+          <label for="continuousMode">Continuous Listening</label>
+          <input id="continuousMode" type="checkbox">
+        </div>
+
+        <div class="setting-group inline">
+          <label for="autoTranslate">Auto Translate</label>
+          <input id="autoTranslate" type="checkbox" checked>
+        </div>
+
+        <hr class="divider">
+
+        <h4>Translation API</h4>
+
+        <div class="setting-group">
+          <label for="apiEndpoint">API Endpoint</label>
+          <input id="apiEndpoint" type="text" placeholder="https://your-api.com/translate">
+        </div>
+
+        <div class="setting-group">
+          <label for="apiKey">API Key</label>
+          <input id="apiKey" type="password" placeholder="Enter your API key">
+        </div>
+
+        <div class="setting-group inline">
+          <label for="showKey">Show Key</label>
+          <input id="showKey" type="checkbox">
+        </div>
+
+        <div class="setting-actions">
+          <button id="testApiBtn" class="btn secondary">Test Connection</button>
+          <button id="saveSettingsBtn" class="btn primary">Save Settings</button>
+        </div>
+
+        <p class="hint">
+          Speech recognition and text-to-speech work directly in the browser. Translation uses the endpoint and key you provide.
+        </p>
+      </div>
     </div>
+  </div>
 
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
