@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Speech Translator</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-microphone"></i> Speech Translator Pro</h1>
+            <p>Real-time speech recognition, translation & synthesis</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="speech-section">
+                <div class="lang-selector">
+                    <div class="lang-group">
+                        <label>Detect Language:</label>
+                        <select id="detectLang">
+                            <option value="auto">Auto Detect</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="hi-IN">Hindi (India)</option>
+                            <option value="es-ES">Spanish</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                            <option value="it-IT">Italian</option>
+                            <option value="pt-BR">Portuguese</option>
+                            <option value="ru-RU">Russian</option>
+                            <option value="zh-CN">Chinese</option>
+                        </select>
+                    </div>
+                    <div class="lang-group">
+                        <label>Translate To:</label>
+                        <select id="targetLang">
+                            <option value="en-US">English (US)</option>
+                            <option value="hi-IN">Hindi (India)</option>
+                            <option value="es-ES">Spanish</option>
+                            <option value="fr-FR">French</option>
+                            <option value="de-DE">German</option>
+                            <option value="it-IT">Italian</option>
+                            <option value="pt-BR">Portuguese</option>
+                            <option value="ru-RU">Russian</option>
+                            <option value="zh-CN">Chinese</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-area">
+                    <button id="startBtn" class="control-btn primary">
+                        <i class="fas fa-microphone"></i> Start Listening
+                    </button>
+                    <button id="stopBtn" class="control-btn secondary" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                    <div class="volume-meter">
+                        <div class="meter" id="volumeMeter"></div>
+                    </div>
+                </div>
+
+                <div class="output-box">
+                    <div class="output-header">
+                        <span>Recognized Speech:</span>
+                        <button id="copyBtn" class="icon-btn" title="Copy">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <textarea id="recognizedText" placeholder="Start speaking... Your speech will appear here..." readonly></textarea>
+                </div>
+            </div>
+
+            <!-- Translation Section -->
+            <div class="translation-section">
+                <div class="output-header">
+                    <span>Translated Text:</span>
+                    <button id="speakBtn" class="icon-btn primary" title="Speak">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button id="clearBtn" class="icon-btn" title="Clear">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <textarea id="translatedText" placeholder="Translation will appear here..." readonly></textarea>
+            </div>
+        </div>
+
+        <!-- Features Panel -->
+        <div class="features-panel">
+            <div class="feature-item">
+                <i class="fas fa-clock"></i>
+                <span id="sessionTime">00:00</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-history"></i>
+                <span>Live Translation</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-language"></i>
+                <span id="langStatus">Ready</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-save"></i>
+                <button id="saveSession" class="icon-btn small">Save</button>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button id="closeSettings" class="close-btn">&times;</button>
+                </div>
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label>Voice Speed:</label>
+                        <input type="range" id="voiceRate" min="0.5" max="2" step="0.1" value="1">
+                        <span id="rateValue">1.0</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>Voice Pitch:</label>
+                        <input type="range" id="voicePitch" min="0" max="2" step="0.1" value="1">
+                        <span id="pitchValue">1.0</span>
+                    </div>
+                    <div class="setting-item">
+                        <label>Continuous Listening:</label>
+                        <input type="checkbox" id="continuousMode">
+                    </div>
+                    <div class="setting-item">
+                        <label>Auto Translate:</label>
+                        <input type="checkbox" id="autoTranslate" checked>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="statusText">Click microphone to start speaking</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
